@@ -6,14 +6,14 @@ import { getHealth, getProviders, getTools } from '@/lib/api';
 
 // 8个引擎的描述信息
 const engineInfo: Record<string, { description: string; icon: string }> = {
-  repo: { description: 'Repository analysis & code intelligence', icon: '⟐' },
-  memory: { description: 'Persistent knowledge & context storage', icon: '◉' },
-  planner: { description: 'Task decomposition & planning engine', icon: '▦' },
-  agent: { description: 'Autonomous agent runtime & sessions', icon: '◆' },
-  tool: { description: 'Tool orchestration & execution', icon: '⟟' },
-  debug: { description: 'Error analysis & debugging engine', icon: '⊞' },
-  provider: { description: 'LLM provider routing & management', icon: '◎' },
-  longcontext: { description: 'Long context processing & chunking', icon: '⊞' },
+  repo: { description: '仓库分析与代码智能', icon: '⟐' },
+  memory: { description: '持久化知识与上下文存储', icon: '◉' },
+  planner: { description: '任务分解与规划引擎', icon: '▦' },
+  agent: { description: '自主代理运行时与会话', icon: '◆' },
+  tool: { description: '工具编排与执行', icon: '⟟' },
+  debug: { description: '错误分析与调试引擎', icon: '⊞' },
+  provider: { description: 'LLM 提供商路由与管理', icon: '◎' },
+  longcontext: { description: '长上下文处理与分块', icon: '⊞' },
 };
 
 export default function Dashboard() {
@@ -37,7 +37,7 @@ export default function Dashboard() {
         if (toolsData.status === 'fulfilled') setTools(Array.isArray(toolsData.value) ? toolsData.value : []);
         
         if (healthData.status === 'rejected') {
-          setError('Backend API not reachable. Start the server at :8080');
+          setError('后端 API 不可达。请在 :8080 启动服务器');
         }
       } catch (e: any) {
         setError(e.message);
@@ -65,17 +65,17 @@ export default function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1>
-              <span className="gradient-text">Hermes-DevOS</span> Dashboard
+              <span className="gradient-text">Hermes-DevOS</span> 控制面板
             </h1>
             <p style={{ marginTop: '4px' }}>
-              AI-Native Development Operating System — 8 engines orchestrated for intelligent development
+              AI 原生开发操作系统 — 8 大引擎协同工作，赋能智能开发
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
             {health && (
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                <div>Version: <span style={{ color: 'var(--text-primary)' }}>{health.version || '0.1.0'}</span></div>
-                <div>Uptime: <span style={{ color: 'var(--text-primary)' }}>{health.uptime || '—'}</span></div>
+                <div>版本: <span style={{ color: 'var(--text-primary)' }}>{health.version || '0.1.0'}</span></div>
+                <div>运行时间: <span style={{ color: 'var(--text-primary)' }}>{health.uptime || '—'}</span></div>
               </div>
             )}
           </div>
@@ -98,7 +98,7 @@ export default function Dashboard() {
 
       {/* Engine Status Grid */}
       <div className="section">
-        <div className="section-title">Engine Status</div>
+        <div className="section-title">引擎状态</div>
         <div className="grid grid-4">
           {engines.map((engine) => (
             <EngineCard
@@ -116,7 +116,7 @@ export default function Dashboard() {
       <div className="grid grid-3">
         {/* Providers */}
         <div className="card fade-in">
-          <div className="section-title" style={{ marginBottom: '12px' }}>Providers</div>
+          <div className="section-title" style={{ marginBottom: '12px' }}>提供商</div>
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="spinner" /> Loading...
@@ -127,7 +127,7 @@ export default function Dashboard() {
                 {providers.length}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                {providers.filter(p => p.has_api_key).length} configured with API keys
+                {providers.filter(p => p.has_api_key).length} 个已配置 API 密钥
               </div>
               {providers.length > 0 && (
                 <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -150,7 +150,7 @@ export default function Dashboard() {
 
         {/* Tools */}
         <div className="card fade-in">
-          <div className="section-title" style={{ marginBottom: '12px' }}>Tools</div>
+          <div className="section-title" style={{ marginBottom: '12px' }}>工具</div>
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="spinner" /> Loading...
@@ -161,7 +161,7 @@ export default function Dashboard() {
                 {tools.length}
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Registered tools available
+                个已注册工具可用
               </div>
               {tools.length > 0 && (
                 <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -184,19 +184,19 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="card fade-in">
-          <div className="section-title" style={{ marginBottom: '12px' }}>Quick Actions</div>
+          <div className="section-title" style={{ marginBottom: '12px' }}>快捷操作</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <a href="/repo" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
-              ⟐ Scan Repository
+              ⟐ 扫描仓库
             </a>
             <a href="/memory" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
-              ◉ Search Memory
+              ◉ 搜索记忆
             </a>
             <a href="/planner" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
-              ▦ Create Plan
+              ▦ 创建计划
             </a>
             <a href="/debug" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
-              ⟟ Analyze Error
+              ⟟ 分析错误
             </a>
           </div>
         </div>

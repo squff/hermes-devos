@@ -51,8 +51,8 @@ def chunk_text(
     Returns:
         List of text chunks.
     """
-    chunk_size = chunk_size or settings.CHUNK_SIZE
-    overlap = overlap or settings.CHUNK_OVERLAP
+    chunk_size = chunk_size or settings.CONTEXT_CHUNK_SIZE
+    overlap = overlap or settings.CONTEXT_OVERLAP
 
     if not text:
         return []
@@ -223,7 +223,7 @@ def semantic_chunk_file(file_path: str) -> List[Dict[str, Any]]:
         for c in raw_chunks:
             line_no = text[:offset].count("\n") + 1
             result.append({"text": c, "start_line": line_no})
-            offset += len(c) - settings.CHUNK_OVERLAP
+            offset += len(c) - settings.CONTEXT_OVERLAP
         return result
 
     except FileNotFoundError:

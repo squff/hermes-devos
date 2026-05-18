@@ -105,8 +105,7 @@ class MemoryEngine:
             }
 
             # Persist to database
-            conn = db.get_connection()
-            cursor = conn.execute(
+            cursor = db.execute(
                 """
                 INSERT INTO memories (content, category, importance, created_at, access_count)
                 VALUES (?, ?, ?, ?, 0)
@@ -114,7 +113,6 @@ class MemoryEngine:
                 (content, category, memory["importance"], now),
             )
             memory["id"] = cursor.lastrowid
-            conn.commit()
 
             # Update in-memory index
             self._memories.append(memory)
@@ -243,26 +241,24 @@ class MemoryEngine:
             content = json.dumps(state, default=str)
             now = datetime.now(timezone.utc).isoformat()
 
-            conn = db.get_connection()
             # Upsert: check if task_state already exists for this task_id
-            existing = conn.execute(
+            existing = db.fetch_one(
                 "SELECT id FROM memories WHERE category = 'task_state' AND content LIKE ?",
                 (f'%"task_id": "{task_id}"%',),
-            ).fetchone()
+            )
 
             if existing:
-                conn.execute(
+                db.execute(
                     "UPDATE memories SET content = ?, importance = 1.0, created_at = ? WHERE id = ?",
                     (content, now, existing["id"]),
                 )
             else:
                 state_with_id = {"task_id": task_id, **state}
                 content = json.dumps(state_with_id, default=str)
-                conn.execute(
+                db.execute(
                     "INSERT INTO memories (content, category, importance, created_at, access_count) VALUES (?, 'task_state', 1.0, ?, 0)",
                     (content, now),
                 )
-            conn.commit()
 
             logger.info(f"Saved task state for task '{task_id}'")
 
@@ -281,10 +277,9 @@ class MemoryEngine:
             The recovered task state dictionary, or None if not found.
         """
         try:
-            conn = db.get_connection()
-            rows = conn.execute(
+            rows = db.fetch_all(
                 "SELECT content FROM memories WHERE category = 'task_state' ORDER BY created_at DESC"
-            ).fetchall()
+            )
 
             for row in rows:
                 try:
@@ -310,16 +305,15 @@ class MemoryEngine:
             Dictionary with total memories, category counts, and other stats.
         """
         try:
-            conn = db.get_connection()
-            total = conn.execute("SELECT COUNT(*) as cnt FROM memories").fetchone()["cnt"]
+            total_row = db.fetch_one("SELECT COUNT(*) as cnt FROM memories")
+            total = total_row["cnt"] if total_row else 0
 
-            categories = conn.execute(
+            categories = db.fetch_all(
                 "SELECT category, COUNT(*) as cnt FROM memories GROUP BY category"
-            ).fetchall()
+            )
 
-            avg_importance = conn.execute(
-                "SELECT AVG(importance) as avg_imp FROM memories"
-            ).fetchone()["avg_imp"]
+            avg_row = db.fetch_one("SELECT AVG(importance) as avg_imp FROM memories")
+            avg_importance = avg_row["avg_imp"] if avg_row else 0.0
 
             return {
                 "total_memories": total,
@@ -375,10 +369,9 @@ class MemoryEngine:
             Number of memories loaded.
         """
         try:
-            conn = db.get_connection()
-            rows = conn.execute(
+            rows = db.fetch_all(
                 "SELECT id, content, category, importance, created_at, access_count FROM memories"
-            ).fetchall()
+            )
             self._memories = [dict(row) for row in rows]
             self._dirty = True
             logger.info(f"Loaded {len(self._memories)} memories from database")

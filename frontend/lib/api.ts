@@ -29,10 +29,10 @@ export const scanRepo = (repoPath: string) =>
 export const searchMemory = (query: string, topK = 5) =>
   fetchAPI(`/memory/search?query=${encodeURIComponent(query)}&top_k=${topK}`);
 
-export const storeMemory = (content: string, namespace?: string) =>
+export const storeMemory = (content: string, category: string = 'general', importance: number = 0.5) =>
   fetchAPI('/memory/store', {
     method: 'POST',
-    body: JSON.stringify({ content, namespace }),
+    body: JSON.stringify({ content, category, importance }),
   });
 
 export const getMemoryStats = () => fetchAPI('/memory/stats');
@@ -45,8 +45,20 @@ export const createPlan = (title: string, description: string) =>
 
 export const getPlans = () => fetchAPI('/plans');
 
-export const decomposePlan = (planId: string) =>
-  fetchAPI(`/plan/${planId}/decompose`, { method: 'POST' });
+export const decomposeTask = (taskId: string, strategy: string = 'sequential') =>
+  fetchAPI(`/plan/decompose?task_id=${encodeURIComponent(taskId)}&strategy=${encodeURIComponent(strategy)}`, {
+    method: 'POST',
+  });
+
+export const reflectPlan = (planId: string) =>
+  fetchAPI(`/plan/reflect?plan_id=${encodeURIComponent(planId)}`, {
+    method: 'POST',
+  });
+
+export const retryTask = (taskId: string, strategy: string = '') =>
+  fetchAPI(`/plan/retry?task_id=${encodeURIComponent(taskId)}&strategy=${encodeURIComponent(strategy)}`, {
+    method: 'POST',
+  });
 
 // Agent
 export const createSession = (role: string) =>
@@ -55,9 +67,8 @@ export const createSession = (role: string) =>
 export const getSessions = () => fetchAPI('/agent/sessions');
 
 export const sendMessage = (sessionId: string, message: string) =>
-  fetchAPI(`/agent/message`, {
+  fetchAPI(`/agent/message?session_id=${encodeURIComponent(sessionId)}&content=${encodeURIComponent(message)}`, {
     method: 'POST',
-    body: JSON.stringify({ session_id: sessionId, message }),
   });
 
 // Debug
@@ -66,10 +77,9 @@ export const analyzeError = (errorText: string) =>
 
 export const getDebugReports = () => fetchAPI('/debug/reports');
 
-export const scanLogs = (logText: string) =>
-  fetchAPI('/debug/scan', {
+export const scanLogs = (logPath: string) =>
+  fetchAPI(`/debug/scan-log?log_path=${encodeURIComponent(logPath)}`, {
     method: 'POST',
-    body: JSON.stringify({ log_text: logText }),
   });
 
 // Provider routing
@@ -84,14 +94,12 @@ export const chunkText = (text: string, chunkSize = 500, overlap = 50) =>
     method: 'POST',
   });
 
-export const compressContext = (text: string) =>
-  fetchAPI('/context/compress', {
+export const compressContext = (text: string, ratio: number = 0.3) =>
+  fetchAPI(`/context/compress?text=${encodeURIComponent(text)}&ratio=${ratio}`, {
     method: 'POST',
-    body: JSON.stringify({ text }),
   });
 
-export const buildIndex = (texts: string[]) =>
-  fetchAPI('/context/index', {
+export const buildIndex = (repoPath: string) =>
+  fetchAPI(`/context/index?repo_path=${encodeURIComponent(repoPath)}`, {
     method: 'POST',
-    body: JSON.stringify({ texts }),
   });

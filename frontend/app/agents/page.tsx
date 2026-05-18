@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createSession, getSessions, sendMessage } from '@/lib/api';
 
 export default function AgentsPage() {
-  const [role, setRole] = useState('assistant');
+  const [role, setRole] = useState('memory');
   const [sessions, setSessions] = useState<any[]>([]);
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [message, setMessage] = useState('');
@@ -52,8 +52,8 @@ export default function AgentsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>◆ <span className="gradient-text">Agent Runtime</span></h1>
-        <p>Create and manage autonomous agent sessions for complex tasks</p>
+        <h1>◆ <span className="gradient-text">代理运行时</span></h1>
+        <p>创建和管理自主代理会话，用于复杂任务</p>
       </div>
 
       <div className="grid grid-2" style={{ gap: '24px' }}>
@@ -61,7 +61,7 @@ export default function AgentsPage() {
         <div>
           {/* Create Session */}
           <div className="card" style={{ marginBottom: '16px' }}>
-            <div className="section-title">Create Session</div>
+            <div className="section-title">创建会话</div>
             <div style={{ marginTop: '12px', display: 'flex', gap: '12px' }}>
               <select
                 className="input"
@@ -69,24 +69,24 @@ export default function AgentsPage() {
                 onChange={(e) => setRole(e.target.value)}
                 style={{ flex: 1 }}
               >
-                <option value="assistant">Assistant</option>
-                <option value="coder">Coder</option>
-                <option value="reviewer">Code Reviewer</option>
-                <option value="architect">Architect</option>
-                <option value="debugger">Debugger</option>
+                <option value="memory">记忆专家</option>
+                <option value="coder">代码专家</option>
+                <option value="reviewer">代码审查</option>
+                <option value="architect">架构师</option>
+                <option value="debugger">调试专家</option>
               </select>
               <button className="btn btn-primary" onClick={handleCreateSession} disabled={loading}>
-                + New Session
+                + 新建会话
               </button>
             </div>
           </div>
 
           {/* Sessions List */}
           <div className="card">
-            <div className="section-title">Sessions ({sessions.length})</div>
+            <div className="section-title">会话列表 ({sessions.length})</div>
             {sessions.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)', marginTop: '12px', fontSize: '14px' }}>
-                No sessions yet. Create one above.
+                暂无会话，请在上方创建。
               </p>
             ) : (
               <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -124,7 +124,7 @@ export default function AgentsPage() {
 
         {/* Right: Chat */}
         <div className="card" style={{ minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
-          <div className="section-title">Chat</div>
+          <div className="section-title">对话</div>
           {error && (
             <div style={{
               padding: '10px',
@@ -147,7 +147,7 @@ export default function AgentsPage() {
           }}>
             {messages.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px 0' }}>
-                {activeSession ? 'Send a message to start chatting' : 'Select or create a session first'}
+                {activeSession ? '发送消息开始对话' : '请先选择或创建会话'}
               </div>
             ) : (
               messages.map((msg, i) => (
@@ -173,7 +173,7 @@ export default function AgentsPage() {
               className="input"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder={activeSession ? "Type a message..." : "Create a session first"}
+              placeholder={activeSession ? "输入消息..." : "请先创建会话"}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               disabled={!activeSession}
             />

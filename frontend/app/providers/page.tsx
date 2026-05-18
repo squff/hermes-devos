@@ -6,7 +6,7 @@ import { getProviders, routeTask } from '@/lib/api';
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<any[]>([]);
   const [routeResult, setRouteResult] = useState<any>(null);
-  const [taskType, setTaskType] = useState('code_generation');
+  const [taskType, setTaskType] = useState('code');
   const [contextSize, setContextSize] = useState(1000);
   const [budget, setBudget] = useState('low');
   const [loading, setLoading] = useState(false);
@@ -32,16 +32,16 @@ export default function ProvidersPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>◎ <span className="gradient-text">Provider Engine</span></h1>
-        <p>LLM provider management, intelligent routing, and fallback chains</p>
+        <h1>◎ <span className="gradient-text">提供商引擎</span></h1>
+        <p>LLM 提供商管理、智能路由和回退链</p>
       </div>
 
       {/* Provider List */}
       <div className="section">
-        <div className="section-title">Registered Providers ({providers.length})</div>
+        <div className="section-title">已注册提供商 ({providers.length})</div>
         {providers.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            No providers configured. Add API keys to connect providers.
+            暂无提供商配置。请添加 API 密钥以连接提供商。
           </div>
         ) : (
           <div className="grid grid-3">
@@ -51,17 +51,17 @@ export default function ProvidersPage() {
                   <h3 style={{ fontSize: '15px', fontWeight: 600 }}>{provider.name}</h3>
                   <span className={`status-badge ${provider.has_api_key ? 'status-ready' : 'status-error'}`}>
                     <span className="status-dot" />
-                    {provider.has_api_key ? 'configured' : 'no key'}
+                    {provider.has_api_key ? '已配置' : '无密钥'}
                   </span>
                 </div>
                 {provider.model && (
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                    Model: <span style={{ color: 'var(--text-primary)' }}>{provider.model}</span>
+                    模型: <span style={{ color: 'var(--text-primary)' }}>{provider.model}</span>
                   </div>
                 )}
                 {provider.context_window && (
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                    Context: <span style={{ color: 'var(--accent)' }}>{provider.context_window.toLocaleString()}</span> tokens
+                    上下文: <span style={{ color: 'var(--accent)' }}>{provider.context_window.toLocaleString()}</span> tokens
                   </div>
                 )}
                 {provider.capabilities && (
@@ -85,9 +85,9 @@ export default function ProvidersPage() {
 
       {/* Task Routing */}
       <div className="card" style={{ marginTop: '24px' }}>
-        <div className="section-title">Task Routing</div>
+        <div className="section-title">任务路由</div>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Find the optimal provider for a specific task based on capabilities and budget
+          根据能力和预算，为特定任务找到最佳提供商
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <select
@@ -96,19 +96,19 @@ export default function ProvidersPage() {
             onChange={(e) => setTaskType(e.target.value)}
             style={{ flex: '1 1 200px' }}
           >
-            <option value="code_generation">Code Generation</option>
-            <option value="code_review">Code Review</option>
-            <option value="summarization">Summarization</option>
-            <option value="analysis">Analysis</option>
-            <option value="planning">Planning</option>
-            <option value="chat">Chat</option>
+            <option value="code">代码生成</option>
+            <option value="code">代码审查</option>
+            <option value="analysis">总结</option>
+            <option value="analysis">分析</option>
+            <option value="creative">规划</option>
+            <option value="general">对话</option>
           </select>
           <input
             className="input"
             type="number"
             value={contextSize}
             onChange={(e) => setContextSize(Number(e.target.value))}
-            placeholder="Context size"
+            placeholder="上下文大小"
             style={{ flex: '0 1 150px' }}
           />
           <select
@@ -117,9 +117,9 @@ export default function ProvidersPage() {
             onChange={(e) => setBudget(e.target.value)}
             style={{ flex: '0 1 120px' }}
           >
-            <option value="low">Low Budget</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">低预算</option>
+            <option value="medium">中等</option>
+            <option value="high">高预算</option>
           </select>
           <button className="btn btn-primary" onClick={handleRoute} disabled={loading}>
             {loading ? <div className="spinner" /> : '◎ Route'}
@@ -141,23 +141,23 @@ export default function ProvidersPage() {
 
       {routeResult && (
         <div className="card fade-in" style={{ marginTop: '16px' }}>
-          <div className="section-title">Routing Result</div>
+          <div className="section-title">路由结果</div>
           <div style={{ marginTop: '12px' }}>
             {routeResult.provider && (
               <div style={{ marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Selected Provider: </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>选定提供商: </span>
                 <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--success)' }}>{routeResult.provider}</span>
               </div>
             )}
             {routeResult.model && (
               <div style={{ marginBottom: '12px' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Model: </span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>模型: </span>
                 <span style={{ color: 'var(--text-primary)' }}>{routeResult.model}</span>
               </div>
             )}
             {routeResult.fallback_chain && (
               <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Fallback Chain:</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>回退链:</div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                   {routeResult.fallback_chain.map((p: string, i: number) => (
                     <span key={i}>

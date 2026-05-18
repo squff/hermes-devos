@@ -45,16 +45,16 @@ export default function DebugPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>⟟ <span className="gradient-text">Debug Engine</span></h1>
-        <p>Error analysis, log scanning, and intelligent debugging assistance</p>
+        <h1>⟟ <span className="gradient-text">调试引擎</span></h1>
+        <p>错误分析、日志扫描和智能调试辅助</p>
       </div>
 
       {/* Tab Navigation */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '24px' }}>
         {[
-          { id: 'analyze' as const, label: '🔍 Error Analysis' },
-          { id: 'reports' as const, label: '📋 Reports' },
-          { id: 'scan' as const, label: '📄 Log Scanner' },
+          { id: 'analyze' as const, label: '🔍 错误分析' },
+          { id: 'reports' as const, label: '📋 报告' },
+          { id: 'scan' as const, label: '📄 日志扫描' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -79,13 +79,13 @@ export default function DebugPage() {
       {activeTab === 'analyze' && (
         <div>
           <div className="card" style={{ marginBottom: '24px' }}>
-            <div className="section-title">Analyze Error</div>
+            <div className="section-title">分析错误</div>
             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <textarea
                 className="input"
                 value={errorText}
                 onChange={(e) => setErrorText(e.target.value)}
-                placeholder="Paste error text or stack trace here..."
+                placeholder="粘贴错误文本或堆栈跟踪..."
                 style={{ minHeight: '140px', fontFamily: 'monospace', fontSize: '13px' }}
               />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -98,7 +98,7 @@ export default function DebugPage() {
 
           {analysis && (
             <div className="card fade-in">
-              <div className="section-title">Analysis Result</div>
+              <div className="section-title">分析结果</div>
               <pre className="code-block" style={{ marginTop: '12px' }}>
                 {typeof analysis === 'string' ? analysis : JSON.stringify(analysis, null, 2)}
               </pre>
@@ -112,7 +112,7 @@ export default function DebugPage() {
         <div>
           {reports.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-              No debug reports available yet.
+              暂无调试报告。
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -146,13 +146,13 @@ export default function DebugPage() {
       {activeTab === 'scan' && (
         <div>
           <div className="card" style={{ marginBottom: '24px' }}>
-            <div className="section-title">Scan Logs</div>
+            <div className="section-title">扫描日志</div>
             <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <textarea
                 className="input"
                 value={logText}
                 onChange={(e) => setLogText(e.target.value)}
-                placeholder="Paste log output here to scan for issues..."
+                placeholder="粘贴日志输出以扫描问题..."
                 style={{ minHeight: '160px', fontFamily: 'monospace', fontSize: '13px' }}
               />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -165,7 +165,7 @@ export default function DebugPage() {
 
           {scanResult && (
             <div className="card fade-in">
-              <div className="section-title">Scan Results</div>
+              <div className="section-title">扫描结果</div>
               <pre className="code-block" style={{ marginTop: '12px' }}>
                 {JSON.stringify(scanResult, null, 2)}
               </pre>

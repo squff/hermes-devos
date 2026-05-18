@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { scanRepo } from '@/lib/api';
+import { fetchAPI } from '@/lib/api';
 
 export default function RepoPage() {
   const [repoPath, setRepoPath] = useState('');
@@ -27,19 +28,19 @@ export default function RepoPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>⟐ <span className="gradient-text">Repository Intelligence</span></h1>
-        <p>Scan and analyze repositories for code intelligence, dependencies, and structure</p>
+        <h1>⟐ <span className="gradient-text">仓库智能分析</span></h1>
+        <p>扫描和分析仓库，提供代码智能、依赖关系和结构信息</p>
       </div>
 
       {/* Scan Form */}
       <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="section-title">Scan Repository</div>
+        <div className="section-title">扫描仓库</div>
         <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
           <input
             className="input"
             value={repoPath}
             onChange={(e) => setRepoPath(e.target.value)}
-            placeholder="/path/to/repository"
+            placeholder="/path/to/仓库路径"
             onKeyDown={(e) => e.key === 'Enter' && handleScan()}
           />
           <button className="btn btn-primary" onClick={handleScan} disabled={loading || !repoPath.trim()}>
@@ -66,13 +67,13 @@ export default function RepoPage() {
           {/* Stats Row */}
           <div className="grid grid-3" style={{ marginBottom: '24px' }}>
             <div className="card">
-              <div className="section-title">Files</div>
+              <div className="section-title">文件数</div>
               <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent)' }}>
                 {result.file_count ?? result.total_files ?? '—'}
               </div>
             </div>
             <div className="card">
-              <div className="section-title">Languages</div>
+              <div className="section-title">编程语言</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                 {result.languages ? Object.entries(result.languages).map(([lang, count]: any) => (
                   <span key={lang} style={{
@@ -86,7 +87,7 @@ export default function RepoPage() {
               </div>
             </div>
             <div className="card">
-              <div className="section-title">Frameworks</div>
+              <div className="section-title">框架</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                 {result.frameworks ? result.frameworks.map((f: string, i: number) => (
                   <span key={i} style={{
@@ -103,7 +104,7 @@ export default function RepoPage() {
 
           {/* Full Result */}
           <div className="card">
-            <div className="section-title">Raw Scan Result</div>
+            <div className="section-title">扫描结果</div>
             <pre className="code-block" style={{ marginTop: '12px' }}>
               {JSON.stringify(result, null, 2)}
             </pre>
@@ -113,8 +114,42 @@ export default function RepoPage() {
 
       {/* Action Buttons */}
       <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-        <button className="btn btn-secondary" disabled={!result}>⟐ Analyze Dependencies</button>
-        <button className="btn btn-secondary" disabled={!result}>📄 Generate Summary</button>
+        <button 
+          className="btn btn-secondary" 
+          disabled={!result || loading}
+          onClick={async () => {
+            if (!repoPath.trim()) return;
+            setLoading(true);
+            try {
+              const data = await fetchAPI(`/repo/dependencies?repo_path=${encodeURIComponent(repoPath)}`, { method: 'POST' });
+              setResult(data);
+            } catch (e: any) {
+              setError(e.message);
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          ⟐ 分析依赖
+        </button>
+        <button 
+          className="btn btn-secondary" 
+          disabled={!result || loading}
+          onClick={async () => {
+            if (!repoPath.trim()) return;
+            setLoading(true);
+            try {
+              const data = await fetchAPI(`/repo/summary?repo_path=${encodeURIComponent(repoPath)}`, { method: 'POST' });
+              setResult(data);
+            } catch (e: any) {
+              setError(e.message);
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          📄 生成摘要
+        </button>
       </div>
     </div>
   );

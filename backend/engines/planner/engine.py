@@ -48,7 +48,6 @@ class PlannerEngine:
         try:
             plan_id = str(uuid.uuid4())
             now = datetime.now(timezone.utc).isoformat()
-            conn = db.get_connection()
 
             # Create tasks for each phase
             tasks = []
@@ -70,7 +69,7 @@ class PlannerEngine:
                 }
                 tasks.append(task)
 
-                conn.execute(
+                db.execute(
                     """
                     INSERT INTO tasks (id, plan_id, phase, title, description, status, strategy,
                                       retry_count, max_retries, result, created_at, updated_at)
@@ -94,15 +93,13 @@ class PlannerEngine:
             }
 
             # Store plan metadata in memories table
-            conn.execute(
+            db.execute(
                 """
                 INSERT INTO memories (content, category, importance, created_at, access_count)
                 VALUES (?, 'plan', 1.0, ?, 0)
                 """,
                 (json.dumps(plan, default=str), now),
             )
-
-            conn.commit()
             logger.info(f"Created plan '{title}' with {len(tasks)} tasks, id={plan_id}")
             return plan
 
@@ -122,8 +119,7 @@ class PlannerEngine:
             List of created subtask dictionaries.
         """
         try:
-            conn = db.get_connection()
-            row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+            row = db.fetch_one("SELECT * FROM tasks WHERE id = ?", (task_id,))
 
             if not row:
                 raise ValueError(f"Task not found: {task_id}")
@@ -146,7 +142,6 @@ class PlannerEngine:
                         description=step_desc,
                         strategy=strategy,
                         now=now,
-                        conn=conn,
                     )
                     subtasks.append(subtask)
 
@@ -164,7 +159,6 @@ class PlannerEngine:
                         description=step_desc,
                         strategy=strategy,
                         now=now,
-                        conn=conn,
                     )
                     subtasks.append(subtask)
 
@@ -184,7 +178,6 @@ class PlannerEngine:
                         description=step_desc,
                         strategy=strategy,
                         now=now,
-                        conn=conn,
                     )
                     subtasks.append(subtask)
 
@@ -192,11 +185,10 @@ class PlannerEngine:
                 raise ValueError(f"Unknown decomposition strategy: {strategy}")
 
             # Update parent task status
-            conn.execute(
+            db.execute(
                 "UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?",
                 (STATUS_IN_PROGRESS, now, task_id),
             )
-            conn.commit()
 
             logger.info(f"Decomposed task {task_id} into {len(subtasks)} subtasks with strategy '{strategy}'")
             return subtasks
@@ -216,10 +208,9 @@ class PlannerEngine:
             Reflection report with success/failure rates, insights, and recommendations.
         """
         try:
-            conn = db.get_connection()
-            rows = conn.execute(
+            rows = db.fetch_all(
                 "SELECT * FROM tasks WHERE plan_id = ?", (plan_id,)
-            ).fetchall()
+            )
 
             if not rows:
                 raise ValueError(f"No tasks found for plan: {plan_id}")
@@ -298,8 +289,7 @@ class PlannerEngine:
             Updated task dictionary.
         """
         try:
-            conn = db.get_connection()
-            row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+            row = db.fetch_one("SELECT * FROM tasks WHERE id = ?", (task_id,))
 
             if not row:
                 raise ValueError(f"Task not found: {task_id}")
@@ -318,7 +308,7 @@ class PlannerEngine:
             now = datetime.now(timezone.utc).isoformat()
             strategy = new_strategy or task.get("strategy", "default")
 
-            conn.execute(
+            db.execute(
                 """
                 UPDATE tasks SET status = ?, retry_count = ?, strategy = ?,
                                  result = NULL, updated_at = ?
@@ -326,7 +316,6 @@ class PlannerEngine:
                 """,
                 (STATUS_PENDING, retry_count, strategy, now, task_id),
             )
-            conn.commit()
 
             updated_task = {
                 "id": task_id,
@@ -361,12 +350,10 @@ class PlannerEngine:
             Plan dictionary with embedded tasks, or None if not found.
         """
         try:
-            conn = db.get_connection()
-
             # Get plan from memories
-            rows = conn.execute(
+            rows = db.fetch_all(
                 "SELECT content FROM memories WHERE category = 'plan' ORDER BY created_at DESC"
-            ).fetchall()
+            )
 
             plan = None
             for row in rows:
@@ -379,10 +366,10 @@ class PlannerEngine:
                     continue
 
             # Get tasks
-            task_rows = conn.execute(
+            task_rows = db.fetch_all(
                 "SELECT * FROM tasks WHERE plan_id = ? ORDER BY created_at ASC",
                 (plan_id,),
-            ).fetchall()
+            )
 
             tasks = [dict(row) for row in task_rows]
 
@@ -427,8 +414,7 @@ class PlannerEngine:
             Task dictionary or None if not found.
         """
         try:
-            conn = db.get_connection()
-            row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+            row = db.fetch_one("SELECT * FROM tasks WHERE id = ?", (task_id,))
             if row:
                 return dict(row)
             return None
@@ -450,14 +436,12 @@ class PlannerEngine:
         """
         try:
             now = datetime.now(timezone.utc).isoformat()
-            conn = db.get_connection()
-            conn.execute(
+            db.execute(
                 "UPDATE tasks SET status = ?, result = ?, updated_at = ? WHERE id = ?",
                 (status, result, now, task_id),
             )
-            conn.commit()
 
-            row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+            row = db.fetch_one("SELECT * FROM tasks WHERE id = ?", (task_id,))
             if row:
                 logger.info(f"Updated task {task_id} status to '{status}'")
                 return dict(row)
@@ -474,7 +458,6 @@ class PlannerEngine:
         description: str,
         strategy: str,
         now: str,
-        conn: Any,
     ) -> Dict[str, Any]:
         """Create a subtask in the database."""
         subtask_id = str(uuid.uuid4())
@@ -494,16 +477,16 @@ class PlannerEngine:
             "updated_at": now,
         }
 
-        conn.execute(
+        db.execute(
             """
             INSERT INTO tasks (id, plan_id, phase, title, description, status, strategy,
-                              retry_count, max_retries, result, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              retry_count, max_retries, result, parent_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 subtask_id, parent_task["plan_id"], parent_task["phase"],
                 title, description, STATUS_PENDING, strategy,
-                0, 3, None, now, now,
+                0, 3, None, parent_task["id"], now, now,
             ),
         )
 

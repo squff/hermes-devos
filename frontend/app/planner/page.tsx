@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPlan, getPlans, decomposePlan } from '@/lib/api';
+import { createPlan, getPlans, decomposeTask, reflectPlan, retryTask } from '@/lib/api';
 
 export default function PlannerPage() {
   const [title, setTitle] = useState('');
@@ -29,7 +29,7 @@ export default function PlannerPage() {
       setPlans(prev => [plan, ...prev]);
       setTitle('');
       setDescription('');
-      showToast('success', 'Plan created successfully');
+      showToast('success', '计划创建成功');
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -39,8 +39,35 @@ export default function PlannerPage() {
 
   const handleDecompose = async (planId: string) => {
     try {
-      await decomposePlan(planId);
-      showToast('success', 'Plan decomposed into tasks');
+      // 获取计划的第一个任务进行分解
+      const plan = plans.find(p => p.id === planId);
+      if (!plan || !plan.tasks || plan.tasks.length === 0) {
+        showToast('error', 'No tasks found in plan');
+        return;
+      }
+      await decomposeTask(plan.tasks[0].id);
+      showToast('success', '计划已分解为任务');
+      // 刷新计划列表
+      const data = await getPlans();
+      setPlans(Array.isArray(data) ? data : data.plans || []);
+    } catch (e: any) {
+      showToast('error', e.message);
+    }
+  };
+
+  const handleReflect = async (planId: string) => {
+    try {
+      const result = await reflectPlan(planId);
+      showToast('success', `成功率: ${(result.success_rate * 100).toFixed(1)}%`);
+    } catch (e: any) {
+      showToast('error', e.message);
+    }
+  };
+
+  const handleRetry = async (taskId: string) => {
+    try {
+      await retryTask(taskId);
+      showToast('success', '任务已重试');
       // 刷新计划列表
       const data = await getPlans();
       setPlans(Array.isArray(data) ? data : data.plans || []);
@@ -52,25 +79,25 @@ export default function PlannerPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>▦ <span className="gradient-text">Planning Engine</span></h1>
-        <p>Task decomposition, planning, and execution orchestration</p>
+        <h1>▦ <span className="gradient-text">规划引擎</span></h1>
+        <p>任务分解、规划和执行编排</p>
       </div>
 
       {/* Create Plan Form */}
       <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="section-title">Create New Plan</div>
+        <div className="section-title">创建新计划</div>
         <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <input
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Plan title..."
+            placeholder="计划标题..."
           />
           <textarea
             className="input"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the plan objectives and scope..."
+            placeholder="描述计划目标和范围..."
             style={{ minHeight: '80px' }}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -95,10 +122,10 @@ export default function PlannerPage() {
 
       {/* Plans List */}
       <div className="section">
-        <div className="section-title">Plans ({plans.length})</div>
+        <div className="section-title">计划列表 ({plans.length})</div>
         {plans.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-            No plans yet. Create one above.
+            暂无计划，请在上方创建。
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -115,7 +142,7 @@ export default function PlannerPage() {
                     {plan.tasks && plan.tasks.length > 0 && (
                       <div style={{ marginTop: '12px' }}>
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                          Tasks ({plan.tasks.length})
+                          任务 ({plan.tasks.length})
                         </div>
                         {plan.tasks.map((task: any, j: number) => (
                           <div key={j} style={{
@@ -137,11 +164,11 @@ export default function PlannerPage() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginLeft: '16px' }}>
-                    <button className="btn btn-secondary" onClick={() => handleDecompose(plan.id)} title="Decompose into tasks">
+                    <button className="btn btn-secondary" onClick={() => handleDecompose(plan.id)} title="分解为任务">
                       ⟐
                     </button>
-                    <button className="btn btn-secondary" title="Reflect on plan">◎</button>
-                    <button className="btn btn-secondary" title="Retry plan">↻</button>
+                    <button className="btn btn-secondary" onClick={() => handleReflect(plan.id)} title="反思计划">◎</button>
+                    <button className="btn btn-secondary" onClick={() => plan.tasks && plan.tasks.length > 0 && handleRetry(plan.tasks[0].id)} title="重试计划">↻</button>
                   </div>
                 </div>
               </div>

@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: '◈' },
-  { href: '/repo', label: 'Repository', icon: '⟐' },
-  { href: '/memory', label: 'Memory', icon: '◉' },
-  { href: '/planner', label: 'Planner', icon: '▦' },
-  { href: '/agents', label: 'Agents', icon: '◆' },
-  { href: '/debug', label: 'Debug', icon: '⟟' },
-  { href: '/providers', label: 'Providers', icon: '◎' },
-  { href: '/context', label: 'Context', icon: '⊞' },
+  { href: '/', label: '控制面板', icon: '◈' },
+  { href: '/repo', label: '仓库分析', icon: '⟐' },
+  { href: '/memory', label: '记忆引擎', icon: '◉' },
+  { href: '/planner', label: '规划引擎', icon: '▦' },
+  { href: '/agents', label: '代理运行时', icon: '◆' },
+  { href: '/debug', label: '调试引擎', icon: '⟟' },
+  { href: '/providers', label: '提供商', icon: '◎' },
+  { href: '/context', label: '长上下文', icon: '⊞' },
 ];
 
 export default function Sidebar() {
@@ -44,7 +44,7 @@ export default function Sidebar() {
           <span className="gradient-text">Hermes-DevOS</span>
         </h2>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-          AI-Native Development OS
+          AI 原生开发操作系统
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export default function Sidebar() {
         fontSize: '11px',
         color: 'var(--text-secondary)',
       }}>
-        v0.1.0 · 8 Engines
+        v0.1.0 · 8 大引擎
       </div>
     </aside>
   );

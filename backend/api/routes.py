@@ -16,17 +16,20 @@ from backend.models.schemas import (
     TaskNode, AgentMessage, DebugReport,
     ProviderRouteResult, ContextChunk, WorkflowPlan, HealthResponse
 )
+import time
 from backend.core.config import settings
 
 router = APIRouter()
 
 # ── Health ──
+_start_time = time.time()
+
 @router.get("/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(
         status="ok",
         version=settings.APP_VERSION,
-        uptime=0,
+        uptime=int(time.time() - _start_time),
         engines={
             "repo": "ready",
             "memory": "ready",
