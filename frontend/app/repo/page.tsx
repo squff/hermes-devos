@@ -44,7 +44,7 @@ export default function RepoPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleScan()}
           />
           <button className="btn btn-primary" onClick={handleScan} disabled={loading || !repoPath.trim()}>
-            {loading ? <><div className="spinner" /> Scanning...</> : '⟐ Scan'}
+            {loading ? <><div className="spinner" /> 扫描中...</> : '⟐ 扫描'}
           </button>
         </div>
       </div>

@@ -42,7 +42,7 @@ export default function PlannerPage() {
       // 获取计划的第一个任务进行分解
       const plan = plans.find(p => p.id === planId);
       if (!plan || !plan.tasks || plan.tasks.length === 0) {
-        showToast('error', 'No tasks found in plan');
+        showToast('error', '计划中没有任务');
         return;
       }
       await decomposeTask(plan.tasks[0].id);
@@ -102,7 +102,7 @@ export default function PlannerPage() {
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button className="btn btn-primary" onClick={handleCreate} disabled={loading || !title.trim() || !description.trim()}>
-              {loading ? <><div className="spinner" /> Creating...</> : '▦ Create Plan'}
+              {loading ? <><div className="spinner" /> 创建中...</> : '▦ 创建计划'}
             </button>
           </div>
         </div>
