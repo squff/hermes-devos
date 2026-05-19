@@ -4,14 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: '/', label: '控制面板', icon: '◈' },
-  { href: '/repo', label: '仓库分析', icon: '⟐' },
-  { href: '/memory', label: '记忆引擎', icon: '◉' },
-  { href: '/planner', label: '规划引擎', icon: '▦' },
-  { href: '/agents', label: '代理运行时', icon: '◆' },
-  { href: '/debug', label: '调试引擎', icon: '⟟' },
-  { href: '/providers', label: '提供商', icon: '◎' },
-  { href: '/context', label: '长上下文', icon: '⊞' },
+  { href: '/', label: '控制面板', icon: '◈', desc: '系统总览' },
+  { href: '/hermes', label: 'Hermes 配置', icon: '⟐', desc: '配置管理' },
+  { href: '/openclaw', label: 'OpenClaw 配置', icon: '◉', desc: '配置管理' },
+  { href: '/runtime', label: '运行时', icon: '▦', desc: '进程管理' },
+  { href: '/logs', label: '日志', icon: '⟟', desc: '日志查看' },
+  { href: '/chat', label: '对话', icon: '◆', desc: '统一入口' },
 ];
 
 export default function Sidebar() {
@@ -41,10 +39,10 @@ export default function Sidebar() {
           gap: '8px',
         }}>
           <span style={{ fontSize: '24px' }}>⬡</span>
-          <span className="gradient-text">Hermes-DevOS</span>
+          <span className="gradient-text">DevOS</span>
         </h2>
         <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-          AI 原生开发操作系统
+          Hermes + OpenClaw 统一控制中心
         </p>
       </div>
 
@@ -68,6 +66,7 @@ export default function Sidebar() {
                 background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
                 color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                 transition: 'all 0.15s ease',
+                textDecoration: 'none',
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
@@ -82,21 +81,23 @@ export default function Sidebar() {
                 }
               }}
             >
-              <span style={{ fontSize: '16px', width: '24px', textAlign: 'center' }}>{item.icon}</span>
-              {item.label}
+              <span style={{ fontSize: '18px', width: '20px', textAlign: 'center' }}>
+                {item.icon}
+              </span>
+              <div>
+                <div>{item.label}</div>
+                <div style={{ fontSize: '10px', opacity: 0.6 }}>{item.desc}</div>
+              </div>
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div style={{
-        padding: '12px 8px',
-        borderTop: '1px solid var(--border)',
-        fontSize: '11px',
-        color: 'var(--text-secondary)',
-      }}>
-        v0.1.0 · 8 大引擎
+      <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+          Hermes-DevOS v0.2.0
+        </div>
       </div>
     </aside>
   );

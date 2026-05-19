@@ -1,18 +1,18 @@
-"""Hermes-DevOS - Main Application"""
+"""
+Hermes-DevOS — 统一控制中心后端
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import time
 
 from backend.api.routes import router
-from backend.core.config import settings
+
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description="AI-native Autonomous Software Engineering Platform"
+    title="Hermes-DevOS",
+    description="Hermes + OpenClaw 统一控制中心",
+    version="0.2.0",
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,17 +21,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Startup time
-_start_time = time.time()
-
-# Routes
 app.include_router(router, prefix="/api")
-
-@app.get("/")
-async def root():
-    return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "status": "running",
-        "uptime": int(time.time() - _start_time)
-    }
