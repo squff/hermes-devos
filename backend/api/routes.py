@@ -1,7 +1,11 @@
 """
 Hermes-DevOS API Routes — 统一控制中心
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+import httpx
+import json as _json
+import os
 from pydantic import BaseModel
 from typing import Any, Optional
 import time
@@ -12,6 +16,8 @@ from backend.core.runtime_manager import runtime_manager
 router = APIRouter()
 
 _start_time = time.time()
+
+GATEWAY_URL = os.getenv("HERMES_GATEWAY_URL", "http://127.0.0.1:8642")
 
 
 # ── 数据模型 ──
@@ -182,6 +188,79 @@ async def runtime_ports():
 
 
 # ── 日志 ──
+
+# ── 对话代理 ──
+
+class ChatRequest(BaseModel):
+    message: str
+    mode: str = "auto"  # auto / hermes / openclaw
+    stream: bool = True
+
+
+@router.post("/chat")
+async def chat_proxy(req: ChatRequest):
+    """代理到 Hermes Gateway 的 OpenAI 兼容 API（SSE 流式）"""
+    # 构建 OpenAI 格式的请求
+    # mode 用于选择 session key，Gateway 负责路由
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+    }
+
+    # 根据 mode 选择 session header
+    session_key = None
+    if req.mode == "openclaw":
+        session_key = "devos-openclaw"
+    elif req.mode == "hermes":
+        session_key = "devos-hermes"
+    # auto 模式不设 session，让 Gateway 默认路由
+
+    if session_key:
+        headers["X-Hermes-Session-Key"] = session_key
+
+    payload = {
+        "model": "hermes-agent",
+        "messages": [{"role": "user", "content": req.message}],
+        "stream": req.stream,
+    }
+
+    if req.stream:
+        return StreamingResponse(
+            _stream_chat(payload, headers),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+    else:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            resp = await client.post(
+                f"{GATEWAY_URL}/v1/chat/completions",
+                json=payload,
+                headers=headers,
+            )
+            data = resp.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            return {"response": content, "system": req.mode}
+
+
+async def _stream_chat(payload: dict, headers: dict):
+    """SSE 流式代理生成器"""
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=300, write=10, pool=10)) as client:
+        async with client.stream(
+            "POST",
+            f"{GATEWAY_URL}/v1/chat/completions",
+            json=payload,
+            headers=headers,
+        ) as resp:
+            async for line in resp.aiter_lines():
+                if line.startswith("data: "):
+                    yield line + "\n\n"
+                elif line.strip() == "":
+                    continue
+
 
 @router.get("/logs/{system}")
 async def get_logs(system: str, lines: int = Query(100, ge=1, le=1000)):
