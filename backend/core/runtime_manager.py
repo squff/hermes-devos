@@ -24,10 +24,16 @@ class RuntimeManager:
 
     def _check_hermes(self) -> dict:
         """检查 Hermes 状态"""
-        # 检查 gateway 进程
-        gateway_running = self._is_process_running("hermes-gateway")
-        # 检查主进程
-        main_running = self._is_process_running("hermes")
+        # 进程检测 + 端口检测双保险
+        gateway_running = (
+            self._is_process_running("hermes_cli.main")
+            or self._is_process_running("hermes.*gateway")
+            or self._is_port_in_use(18765)
+        )
+        main_running = (
+            self._is_process_running("hermes")
+            and not gateway_running  # 排除 gateway 本身
+        )
 
         # 读取版本
         version = self._get_version("hermes")
@@ -42,7 +48,11 @@ class RuntimeManager:
 
     def _check_openclaw(self) -> dict:
         """检查 OpenClaw 状态"""
-        gateway_running = self._is_process_running("openclaw")
+        gateway_running = (
+            self._is_process_running("openclaw.*gateway")
+            or self._is_process_running("openclaw.*dist/index.js")
+            or self._is_port_in_use(18789)
+        )
 
         version = self._get_version("openclaw")
 
@@ -53,11 +63,11 @@ class RuntimeManager:
             "log_dir": str(self.openclaw_log_dir) if self.openclaw_log_dir.exists() else None,
         }
 
-    def _is_process_running(self, name: str) -> bool:
-        """检查进程是否运行"""
+    def _is_process_running(self, pattern: str) -> bool:
+        """检查进程是否运行（支持正则）"""
         try:
             result = subprocess.run(
-                ["pgrep", "-f", name],
+                ["pgrep", "-f", pattern],
                 capture_output=True, text=True, timeout=5
             )
             return result.returncode == 0 and result.stdout.strip() != ""
