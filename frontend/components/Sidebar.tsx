@@ -1,104 +1,55 @@
 'use client';
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const navItems = [
-  { href: '/', label: '控制面板', icon: '◈', desc: '系统总览' },
-  { href: '/hermes', label: 'Hermes 配置', icon: '⟐', desc: '配置管理' },
-  { href: '/openclaw', label: 'OpenClaw 配置', icon: '◉', desc: '配置管理' },
-  { href: '/runtime', label: '运行时', icon: '▦', desc: '进程管理' },
-  { href: '/logs', label: '日志', icon: '⟟', desc: '日志查看' },
-  { href: '/chat', label: '对话', icon: '◆', desc: '统一入口' },
+const NAV = [
+  { href: '/', label: '控制台', icon: 'M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5zm0 8a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6zm10 0a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-6z' },
+  { href: '/chat', label: '对话', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
+  { href: '/hermes', label: 'Hermes 配置', icon: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.94-3a8.03 8.03 0 0 0-.54-1.8l2.02-1.57-2-3.46-2.44.88a8.04 8.04 0 0 0-1.56-.9l-.37-2.57h-4l-.37 2.57c-.56.24-1.07.55-1.56.9l-2.44-.88-2 3.46 2.02 1.57a8.03 8.03 0 0 0 0 3.6l-2.02 1.57 2 3.46 2.44-.88c.49.35 1 .66 1.56.9l.37 2.57h4l.37-2.57c.56-.24 1.07-.55 1.56-.9l2.44.88 2-3.46-2.02-1.57c.36-.59.63-1.23.8-1.8h.01z' },
+  { href: '/openclaw', label: 'OpenClaw 配置', icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z' },
+  { href: '/runtime', label: '运行时', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
+  { href: '/logs', label: '日志', icon: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
 ];
+
+function Icon({ path }: { path: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d={path} />
+    </svg>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside style={{
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 'var(--sidebar-width)',
-      background: 'var(--bg-secondary)',
-      borderRight: '1px solid var(--border)',
-      padding: '24px 16px',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 100,
-    }}>
-      {/* Logo */}
-      <div style={{ marginBottom: '32px', padding: '0 8px' }}>
-        <h2 style={{
-          fontSize: '18px',
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <span style={{ fontSize: '24px' }}>⬡</span>
-          <span className="gradient-text">DevOS</span>
-        </h2>
-        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-          Hermes + OpenClaw 统一控制中心
-        </p>
+    <nav className="sidebar">
+      <div className="sidebar-brand">
+        <h1>Hermes-DevOS</h1>
+        <span>v0.2.0 · Runtime Console</span>
       </div>
-
-      {/* Navigation */}
-      <nav style={{ flex: 1 }}>
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                marginBottom: '4px',
-                fontSize: '14px',
-                fontWeight: isActive ? 600 : 400,
-                background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
-                transition: 'all 0.15s ease',
-                textDecoration: 'none',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                }
-              }}
-            >
-              <span style={{ fontSize: '18px', width: '20px', textAlign: 'center' }}>
-                {item.icon}
-              </span>
-              <div>
-                <div>{item.label}</div>
-                <div style={{ fontSize: '10px', opacity: 0.6 }}>{item.desc}</div>
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-          Hermes-DevOS v0.2.0
+      <div className="sidebar-nav">
+        {NAV.map(item => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}
+          >
+            <Icon path={item.icon} />
+            {item.label}
+          </Link>
+        ))}
+      </div>
+      <div className="sidebar-status">
+        <div className="sidebar-status-item">
+          <span className="status-dot online" />
+          Hermes
+        </div>
+        <div className="sidebar-status-item">
+          <span className="status-dot online" />
+          OpenClaw
         </div>
       </div>
-    </aside>
+    </nav>
   );
 }

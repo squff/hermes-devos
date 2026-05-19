@@ -4,17 +4,19 @@ import Sidebar from '@/components/Sidebar';
 
 export const metadata: Metadata = {
   title: 'Hermes-DevOS',
-  description: 'AI-Native Development Operating System - 8 Engines for intelligent software development',
+  description: 'AI Native Runtime Control Console',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body>
-        <Sidebar />
-        <main className="main-layout">
-          {children}
-        </main>
+        <div className="shell">
+          <Sidebar />
+          <div className="main-content">
+            {children}
+          </div>
+        </div>
       </body>
     </html>
   );

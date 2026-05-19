@@ -1,125 +1,218 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getStatus } from '@/lib/api';
+import { getStatus, getHermesConfig } from '@/lib/api';
+
+interface RuntimeInfo {
+  running: boolean;
+  pid: number;
+  version: string;
+}
+
+interface StatusData {
+  hermes: RuntimeInfo;
+  openclaw: RuntimeInfo;
+  ports: Record<string, { port: number; in_use: boolean }>;
+  processes: Array<{ pid: number; cpu: string; mem: string; command: string }>;
+}
+
+
 
 export default function Dashboard() {
-  const [status, setStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<StatusData | null>(null);
+  const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
-    getStatus()
-      .then(setStatus)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    getStatus().then(setStatus).catch(() => {});
+    getHermesConfig().then(setConfig).catch(() => {});
   }, []);
 
-  if (loading) return <div className="page-header"><h1>加载中...</h1></div>;
-
-  const h = status?.hermes || {};
-  const o = status?.openclaw || {};
+  const h = status?.hermes;
+  const o = status?.openclaw;
   const ports = status?.ports || {};
+  const processes = status?.processes || [];
+
+  const currentModel = config?.['模型']?.['当前模型'] || '—';
+  const currentProvider = config?.['模型']?.['提供商'] || '—';
 
   return (
-    <div>
-      <div className="page-header">
-        <h1><span className="gradient-text">统一控制面板</span></h1>
-        <p>Hermes + OpenClaw 双系统状态总览</p>
-      </div>
-
-      {/* 双系统状态卡片 */}
-      <div className="grid grid-2" style={{ marginBottom: '24px' }}>
-        {/* Hermes 状态 */}
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>⟐ Hermes</h3>
-            <span className={`status-badge ${h.gateway_running ? 'status-ready' : 'status-error'}`}>
-              <span className="status-dot" />
-              {h.gateway_running ? '运行中' : '未运行'}
-            </span>
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <div style={{ marginBottom: '6px' }}>版本: <span style={{ color: 'var(--text-primary)' }}>{h.version || '未知'}</span></div>
-            <div style={{ marginBottom: '6px' }}>配置: <span style={{ color: 'var(--text-primary)', fontSize: '11px' }}>{h.config_path || '—'}</span></div>
-          </div>
+    <>
+      {/* ── Top bar: runtime status pills ── */}
+      <div className="top-bar">
+        <div className="top-bar-left">
+          <span className="runtime-pill">
+            <span className={`status-dot ${h?.running ? 'online' : 'offline'}`} />
+            Hermes {h?.running ? 'online' : 'offline'}
+          </span>
+          <span className="runtime-pill">
+            <span className={`status-dot ${o?.running ? 'online' : 'offline'}`} />
+            OpenClaw {o?.running ? 'online' : 'offline'}
+          </span>
         </div>
-
-        {/* OpenClaw 状态 */}
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>◉ OpenClaw</h3>
-            <span className={`status-badge ${o.gateway_running ? 'status-ready' : 'status-error'}`}>
-              <span className="status-dot" />
-              {o.gateway_running ? '运行中' : '未运行'}
-            </span>
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <div style={{ marginBottom: '6px' }}>版本: <span style={{ color: 'var(--text-primary)' }}>{o.version || '未知'}</span></div>
-            <div style={{ marginBottom: '6px' }}>配置: <span style={{ color: 'var(--text-primary)', fontSize: '11px' }}>{o.config_path || '—'}</span></div>
-          </div>
+        <div className="top-bar-right">
+          <span className="runtime-pill">
+            {currentModel}
+          </span>
+          <span className="runtime-pill">
+            {currentProvider}
+          </span>
         </div>
       </div>
 
-      {/* 端口状态 */}
-      <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="section-title">端口状态</div>
-        <div className="grid grid-4" style={{ marginTop: '12px' }}>
-          {Object.entries(ports).map(([name, info]: [string, any]) => (
-            <div key={name} style={{
-              padding: '12px',
-              background: 'var(--bg-primary)',
-              borderRadius: '8px',
-              border: '1px solid var(--border)',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                {name.replace(/_/g, ' ')}
+      {/* ── Main area ── */}
+      <div className="page fade-in">
+        <div className="dash-grid">
+          {/* LEFT: Runtime overview */}
+          <div>
+            <div className="section">
+              <div className="section-head">
+                <span className="section-title">运行时概览</span>
               </div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: info.in_use ? 'var(--success)' : 'var(--text-secondary)' }}>
-                :{info.port}
+              <table className="data-list">
+                <thead>
+                  <tr>
+                    <th>系统</th>
+                    <th>状态</th>
+                    <th>版本</th>
+                    <th>PID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Hermes</td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span className={`status-dot ${h?.running ? 'online' : 'offline'}`} />
+                        {h?.running ? '运行中' : '已停止'}
+                      </span>
+                    </td>
+                    <td style={{ fontFamily: 'var(--font-mono)' }}>{h?.version || '—'}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)' }}>{h?.pid || '—'}</td>
+                  </tr>
+                  <tr>
+                    <td>OpenClaw</td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span className={`status-dot ${o?.running ? 'online' : 'offline'}`} />
+                        {o?.running ? '运行中' : '已停止'}
+                      </span>
+                    </td>
+                    <td style={{ fontFamily: 'var(--font-mono)' }}>{o?.version || '—'}</td>
+                    <td style={{ fontFamily: 'var(--font-mono)' }}>{o?.pid || '—'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Processes */}
+            <div className="section">
+              <div className="section-head">
+                <span className="section-title">进程</span>
+                <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                  {processes.length}
+                </span>
               </div>
-              <div style={{ fontSize: '11px', color: info.in_use ? 'var(--success)' : 'var(--text-secondary)' }}>
-                {info.in_use ? '占用' : '空闲'}
+              {processes.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--text-tertiary)', padding: '16px 0' }}>—</div>
+              ) : (
+                <table className="data-list">
+                  <thead>
+                    <tr>
+                      <th>PID</th>
+                      <th>CPU</th>
+                      <th>内存</th>
+                      <th>命令</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {processes.slice(0, 10).map((p, i) => (
+                      <tr key={i}>
+                        <td style={{ fontFamily: 'var(--font-mono)' }}>{p.pid}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)' }}>{p.cpu}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)' }}>{p.mem}</td>
+                        <td style={{
+                          maxWidth: 320,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 12,
+                        }}>
+                          {p.command}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Quick info */}
+          <div>
+            {/* Ports */}
+            <div className="section">
+              <div className="section-head">
+                <span className="section-title">端口</span>
+              </div>
+              <table className="data-list">
+                <thead>
+                  <tr>
+                    <th>服务</th>
+                    <th>端口</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(ports).length === 0 ? (
+                    <tr>
+                      <td colSpan={3} style={{ color: 'var(--text-tertiary)' }}>—</td>
+                    </tr>
+                  ) : (
+                    Object.entries(ports).map(([name, info]) => (
+                      <tr key={name}>
+                        <td>{name.replace(/_/g, ' ')}</td>
+                        <td style={{ fontFamily: 'var(--font-mono)' }}>:{info.port}</td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <span className={`status-dot ${info.in_use ? 'online' : 'idle'}`} />
+                            {info.in_use ? '占用' : '空闲'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Config snapshot */}
+            <div className="section">
+              <div className="section-head">
+                <span className="section-title">配置</span>
+              </div>
+              <div className="card">
+                <div className="dash-status-row">
+                  <span className="dash-status-label">模型</span>
+                  <span className="dash-status-value">{currentModel}</span>
+                </div>
+                <div className="dash-status-row">
+                  <span className="dash-status-label">提供商</span>
+                  <span className="dash-status-value">{currentProvider}</span>
+                </div>
+                <div className="dash-status-row">
+                  <span className="dash-status-label">Hermes 版本</span>
+                  <span className="dash-status-value">{h?.version || '—'}</span>
+                </div>
+                <div className="dash-status-row">
+                  <span className="dash-status-label">OpenClaw 版本</span>
+                  <span className="dash-status-value">{o?.version || '—'}</span>
+                </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
-
-      {/* 进程列表 */}
-      <div className="card">
-        <div className="section-title">相关进程 ({status?.processes?.length || 0})</div>
-        {(!status?.processes || status.processes.length === 0) ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
-            暂无运行中的进程
-          </div>
-        ) : (
-          <div style={{ marginTop: '12px', overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '8px', textAlign: 'left', color: 'var(--text-secondary)' }}>PID</th>
-                  <th style={{ padding: '8px', textAlign: 'left', color: 'var(--text-secondary)' }}>CPU%</th>
-                  <th style={{ padding: '8px', textAlign: 'left', color: 'var(--text-secondary)' }}>MEM%</th>
-                  <th style={{ padding: '8px', textAlign: 'left', color: 'var(--text-secondary)' }}>命令</th>
-                </tr>
-              </thead>
-              <tbody>
-                {status.processes.map((p: any, i: number) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '8px' }}>{p.pid}</td>
-                    <td style={{ padding: '8px' }}>{p.cpu}</td>
-                    <td style={{ padding: '8px' }}>{p.mem}</td>
-                    <td style={{ padding: '8px', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.command}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 }

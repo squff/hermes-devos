@@ -1,154 +1,264 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getHermesConfig, setHermesValue } from '@/lib/api';
+import { useEffect, useState, useCallback } from 'react';
+
+interface ConfigItem {
+  key: string;
+  value: string;
+  path: string;
+}
+
+interface ConfigSection {
+  name: string;
+  items: ConfigItem[];
+}
+
+const MODELS = [
+  'mimo-v2.5-pro',
+  'gpt-4o',
+  'claude-sonnet-4-20250514',
+  'deepseek-v3',
+  'qwen3-235b',
+];
+
+const PROVIDERS = [
+  'xiaomi',
+  'openai',
+  'anthropic',
+  'deepseek',
+  'openrouter',
+];
 
 export default function HermesConfigPage() {
-  const [config, setConfig] = useState<any>(null);
+  const [sections, setSections] = useState<ConfigSection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editKey, setEditKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
 
-  useEffect(() => {
-    getHermesConfig().then(setConfig).catch(() => {}).finally(() => setLoading(false));
+  const showToast = useCallback((type: 'success' | 'error', msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 2500);
   }, []);
 
-  const showToast = (type: 'success' | 'error', msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleSave = async (section: string, key: string) => {
-    const pathMap: Record<string, string> = {
-      '模型-当前模型': 'model.default',
-      '模型-提供商': 'model.provider',
-      'Agent-最大轮次': 'agent.max_turns',
-      'Agent-超时时间': 'agent.gateway_timeout',
-      'Agent-自动重试': 'agent.auto_retry_on_timeout',
-      'Agent-最大重试': 'agent.max_consecutive_retries',
-      'Memory-记忆开关': 'memory.memory_enabled',
-      'Memory-记忆上限': 'memory.memory_char_limit',
-      'Memory-用户上限': 'memory.user_char_limit',
-      'Memory-自动压缩': 'memory.auto_compact',
-      'Memory-习惯学习': 'memory.habit_learning',
-      'Compression-压缩开关': 'compression.enabled',
-      'Compression-阈值': 'compression.threshold',
-      'Compression-目标比例': 'compression.target_ratio',
-      'Compression-保护最近': 'compression.protect_last_n',
-      'Display-语言': 'display.language',
-      'Display-显示费用': 'display.show_cost',
-      'Display-流式输出': 'display.streaming',
-      'Display-紧凑模式': 'display.compact',
-      'Terminal-超时': 'terminal.timeout',
-    };
-
-    const path = pathMap[`${section}-${key}`];
-    if (!path) {
-      showToast('error', `未知配置项: ${section}-${key}`);
-      return;
-    }
-
+  const fetchConfig = useCallback(async () => {
     try {
-      await setHermesValue(path, editValue);
-      showToast('success', `已更新: ${key}`);
-      setEditing(null);
-      // 刷新配置
-      const fresh = await getHermesConfig();
-      setConfig(fresh);
-    } catch (e: any) {
-      showToast('error', e.message);
+      setLoading(true);
+      const res = await fetch('http://localhost:8080/api/config/hermes');
+      const data = await res.json();
+      setSections(data.sections || []);
+    } catch {
+      showToast('error', '加载配置失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  const startEdit = (item: ConfigItem) => {
+    setEditKey(item.key);
+    setEditValue(item.value);
+  };
+
+  const cancelEdit = () => {
+    setEditKey(null);
+    setEditValue('');
+  };
+
+  const saveEdit = async (path: string) => {
+    if (!editKey) return;
+    setSaving(true);
+    try {
+      const res = await fetch('http://localhost:8080/api/config/hermes/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, value: editValue }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      showToast('success', `${editKey} 已更新`);
+      setSections((prev) =>
+        prev.map((s) => ({
+          ...s,
+          items: s.items.map((i) =>
+            i.key === editKey ? { ...i, value: editValue } : i
+          ),
+        }))
+      );
+      cancelEdit();
+    } catch {
+      showToast('error', '保存失败');
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <div className="page-header"><h1>加载中...</h1></div>;
-
-  const sectionIcons: Record<string, string> = {
-    model: '◎',
-    agent: '◆',
-    memory: '◉',
-    compression: '⊞',
-    display: '◈',
-    terminal: '⟟',
+  const switchModel = async () => {
+    if (!selectedModel) return;
+    try {
+      const res = await fetch('http://localhost:8080/api/config/switch-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: selectedModel }),
+      });
+      if (!res.ok) throw new Error();
+      showToast('success', `模型已切换到 ${selectedModel}`);
+      fetchConfig();
+    } catch {
+      showToast('error', '切换模型失败');
+    }
   };
 
-  const sectionNames: Record<string, string> = {
-    model: '模型配置',
-    agent: 'Agent 配置',
-    memory: '记忆配置',
-    compression: '压缩配置',
-    display: '显示配置',
-    terminal: '终端配置',
+  const switchProvider = async () => {
+    if (!selectedProvider) return;
+    try {
+      const res = await fetch('http://localhost:8080/api/config/switch-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: selectedProvider }),
+      });
+      if (!res.ok) throw new Error();
+      showToast('success', `提供商已切换到 ${selectedProvider}`);
+      fetchConfig();
+    } catch {
+      showToast('error', '切换提供商失败');
+    }
+  };
+
+  const toggleMemory = async () => {
+    const next = !memoryEnabled;
+    try {
+      const res = await fetch('http://localhost:8080/api/config/toggle-memory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      });
+      if (!res.ok) throw new Error();
+      setMemoryEnabled(next);
+      showToast('success', `记忆已${next ? '开启' : '关闭'}`);
+      fetchConfig();
+    } catch {
+      showToast('error', '切换记忆失败');
+    }
   };
 
   return (
-    <div>
+    <div className="page">
       <div className="page-header">
-        <h1>⟐ <span className="gradient-text">Hermes 配置中心</span></h1>
-        <p>一键修改 Hermes 配置，修改后立即生效</p>
+        <h1>Hermes 配置</h1>
       </div>
 
-      {config && Object.entries(config).map(([section, items]: [string, any]) => (
-        <div key={section} className="card" style={{ marginBottom: '16px' }}>
-          <div className="section-title">
-            {sectionIcons[section] || '▸'} {sectionNames[section] || section}
+      {/* Quick Actions */}
+      <div className="section">
+        <div className="section-head">
+          <span className="section-title">快捷操作</span>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', padding: '0 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <select
+              className="input"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              style={{ minWidth: 180 }}
+            >
+              <option value="">切换模型...</option>
+              {MODELS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <button className="btn btn-sm btn-accent" onClick={switchModel} disabled={!selectedModel}>
+              Apply
+            </button>
           </div>
-          <div style={{ marginTop: '12px' }}>
-            {Object.entries(items).map(([key, value]: [string, any]) => (
-              <div key={key} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '10px 0',
-                borderBottom: '1px solid var(--border)',
-              }}>
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                  {key}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {editing === `${section}-${key}` ? (
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <select
+              className="input"
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              style={{ minWidth: 180 }}
+            >
+              <option value="">切换提供商...</option>
+              {PROVIDERS.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+            <button className="btn btn-sm btn-accent" onClick={switchProvider} disabled={!selectedProvider}>
+              Apply
+            </button>
+          </div>
+
+          <button
+            className="btn btn-sm btn-ghost"
+            onClick={toggleMemory}
+            style={{ borderColor: memoryEnabled ? '#22c55e' : '#ef4444', color: memoryEnabled ? '#22c55e' : '#ef4444' }}
+          >
+            记忆: {memoryEnabled ? '开' : '关'}
+          </button>
+        </div>
+      </div>
+
+      {/* Config Sections */}
+      {loading ? (
+        <div style={{ padding: '32px', color: '#71717a', textAlign: 'center' }}>加载中...</div>
+      ) : (
+        sections.map((section) => (
+          <div className="section" key={section.name}>
+            <div className="section-head">
+              <span className="section-title">{section.name}</span>
+            </div>
+            <div className="config-group">
+              {section.items.map((item) => (
+                <div className="config-row fade-in" key={item.key}>
+                  <span className="config-key">{item.key}</span>
+                  {editKey === item.key ? (
                     <>
                       <input
                         className="input"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        style={{ width: '200px', fontSize: '13px' }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSave(section, key);
-                          if (e.key === 'Escape') setEditing(null);
-                        }}
                         autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit(item.path);
+                          if (e.key === 'Escape') cancelEdit();
+                        }}
+                        style={{ flex: 1, maxWidth: 400 }}
                       />
-                      <button className="btn btn-primary" onClick={() => handleSave(section, key)} style={{ padding: '4px 12px', fontSize: '12px' }}>
-                        保存
-                      </button>
-                      <button className="btn btn-secondary" onClick={() => setEditing(null)} style={{ padding: '4px 12px', fontSize: '12px' }}>
-                        取消
-                      </button>
+                      <div className="config-actions">
+                        <button
+                          className="btn btn-sm btn-accent"
+                          onClick={() => saveEdit(item.path)}
+                          disabled={saving}
+                        >
+                          保存
+                        </button>
+                        <button className="btn btn-sm btn-ghost" onClick={cancelEdit}>
+                          取消
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <>
-                      <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {typeof value === 'boolean' ? (value ? '✅ 启用' : '❌ 禁用') : String(value)}
-                      </span>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => {
-                          setEditing(`${section}-${key}`);
-                          setEditValue(String(value));
-                        }}
-                        style={{ padding: '2px 8px', fontSize: '11px' }}
-                      >
-                        编辑
-                      </button>
+                      <span className="config-value">{item.value || '—'}</span>
+                      <div className="config-actions">
+                        <button className="btn btn-sm btn-ghost" onClick={() => startEdit(item)}>
+                          编辑
+                        </button>
+                      </div>
                     </>
                   )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
 
       {toast && (
         <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
